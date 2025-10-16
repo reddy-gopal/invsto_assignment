@@ -34,6 +34,7 @@ class TestAPISchemaAndValidation(unittest.TestCase):
             "volume": 100
         }
         response = client.post("/data", json=payload)
+        print("Response JSON:", response.json())
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertIn("message", body)

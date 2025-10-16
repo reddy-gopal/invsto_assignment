@@ -35,14 +35,15 @@ async def add_data(record: StockDataSchema):
         return {"message": "Record added successfully", "data": created}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
 @app.get("/strategy/performance")
 async def strategy_performance(short: int = 5, long: int = 20):
     if short >= long:
         raise HTTPException(status_code=400, detail="short must be less than long")
+
     rows = await db.stockdata.find_many()
     if not rows:
         return {"error": "no data in database"}
+
     df = pd.DataFrame([
         {
             "datetime": r.datetime.isoformat() if hasattr(r.datetime, "isoformat") else r.datetime,
@@ -51,12 +52,17 @@ async def strategy_performance(short: int = 5, long: int = 20):
         for r in rows
     ])
 
+    # ✅ FIX: handle ISO8601 or mixed datetime formats safely
+    df["datetime"] = pd.to_datetime(df["datetime"], format="ISO8601", errors="coerce")
 
-    # ensure datetime typed
-    df["datetime"] = pd.to_datetime(df["datetime"])
+    # Optional: drop invalid rows if any parsing failed
+    df = df.dropna(subset=["datetime"]).reset_index(drop=True)
+
     if df.empty or df.shape[0] < long:
         return {"error": f"not enough data to compute long moving average (need at least {long} rows)"}
+
     processed = compute_moving_averages(df, short=short, long=long)
     trades = generate_trades(processed)
     perf = performance_from_trades(trades)
+
     return {"performance": perf, "trades": trades}

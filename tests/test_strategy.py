@@ -20,6 +20,8 @@ class TestStrategy(unittest.TestCase):
         processed = compute_moving_averages(self.df.copy(), short=2, long=3)
         trades = generate_trades(processed)
         perf = performance_from_trades(trades)
+        print("Trades:", trades)
+        print("Performance:", perf)
         self.assertIsInstance(trades, list)
         self.assertIn("total_trades", perf)
         self.assertGreaterEqual(perf["total_trades"], 0)
